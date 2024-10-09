@@ -1,35 +1,46 @@
 import os
-import re
 import sys
 from pathlib import Path
 import yaml
 import click
+import re
+import time
+from openai import OpenAIError
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.common.exceptions import WebDriverException
-from lib_resume_builder_AIHawk import Resume,StyleManager,FacadeManager,ResumeGenerator
-from src.utils import chrome_browser_options
-from src.llm.llm_manager import GPTAnswerer
-from src.aihawk_authenticator import AIHawkAuthenticator
-from src.aihawk_bot_facade import AIHawkBotFacade
-from src.aihawk_job_manager import AIHawkJobManager
+from lib_resume_builder_AIHawk import Resume, StyleManager, FacadeManager, ResumeGenerator
+from src.utils import chromeBrowserOptions
+from src.gpt import GPTAnswerer
+from src.linkedIn_authenticator import LinkedInAuthenticator
+from src.linkedIn_bot_facade import LinkedInBotFacade
+from src.linkedIn_job_manager import LinkedInJobManager
 from src.job_application_profile import JobApplicationProfile
-from loguru import logger
 
 # Suppress stderr
 sys.stderr = open(os.devnull, 'w')
+def safe_api_call():
+    try:
+        # Your OpenAI API call here
+        pass
+    except OpenAIError as e:
+        if e.code == 'rate_limit_exceeded':
+            print("Rate limit exceeded. Retrying after a delay...")
+            time.sleep(60)  # Wait for a minute before retrying
+            safe_api_call()  # Retry the API call
+        else:
+            raise  # Re-raise if it's a different error
 
 class ConfigError(Exception):
+    """Custom exception for configuration errors."""
     pass
 
 class ConfigValidator:
-    @staticmethod
-    def validate_email(email: str) -> bool:
-        return re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email) is not None
-    
+
     @staticmethod
     def validate_yaml_file(yaml_path: Path) -> dict:
+        """Validates and loads a YAML file."""
         try:
             with open(yaml_path, 'r') as stream:
                 return yaml.safe_load(stream)
@@ -37,9 +48,10 @@ class ConfigValidator:
             raise ConfigError(f"Error reading file {yaml_path}: {exc}")
         except FileNotFoundError:
             raise ConfigError(f"File not found: {yaml_path}")
-    
-    
+
+    @staticmethod
     def validate_config(config_yaml_path: Path) -> dict:
+        """Validates the configuration against required keys."""
         parameters = ConfigValidator.validate_yaml_file(config_yaml_path)
         required_keys = {
             'remote': bool,
@@ -50,22 +62,15 @@ class ConfigValidator:
             'locations': list,
             'distance': int,
             'companyBlacklist': list,
-            'titleBlacklist': list,
-            'llm_model_type': str,
-            'llm_model': str
+            'titleBlacklist': list
         }
 
+        # Check if required keys are present in the parameters
         for key, expected_type in required_keys.items():
             if key not in parameters:
-                if key in ['companyBlacklist', 'titleBlacklist']:
-                    parameters[key] = []
-                else:
-                    raise ConfigError(f"Missing or invalid key '{key}' in config file {config_yaml_path}")
-            elif not isinstance(parameters[key], expected_type):
-                if key in ['companyBlacklist', 'titleBlacklist'] and parameters[key] is None:
-                    parameters[key] = []
-                else:
-                    raise ConfigError(f"Invalid type for key '{key}' in config file {config_yaml_path}. Expected {expected_type}.")
+                raise ConfigError(f"Missing required key: {key}")
+            if not isinstance(parameters[key], expected_type):
+                raise ConfigError(f"Incorrect type for key '{key}': Expected {expected_type}, got {type(parameters[key])}")
 
         experience_levels = ['internship', 'entry', 'associate', 'mid-senior level', 'director', 'executive']
         for level in experience_levels:
@@ -99,20 +104,30 @@ class ConfigValidator:
 
         return parameters
 
-
-
     @staticmethod
     def validate_secrets(secrets_yaml_path: Path) -> tuple:
+        """Validates and loads secrets from a specified path."""
         secrets = ConfigValidator.validate_yaml_file(secrets_yaml_path)
-        mandatory_secrets = ['llm_api_key']
+        mandatory_secrets = ['email', 'password', 'openai_api_key']
 
         for secret in mandatory_secrets:
             if secret not in secrets:
                 raise ConfigError(f"Missing secret '{secret}' in file {secrets_yaml_path}")
 
-        if not secrets['llm_api_key']:
-            raise ConfigError(f"llm_api_key cannot be empty in secrets file {secrets_yaml_path}.")
-        return secrets['llm_api_key']
+        if not ConfigValidator.validate_email(secrets['email']):
+            raise ConfigError(f"Invalid email format in secrets file {secrets_yaml_path}.")
+        if not secrets['password']:
+            raise ConfigError(f"Password cannot be empty in secrets file {secrets_yaml_path}.")
+        if not secrets['openai_api_key']:
+            raise ConfigError(f"OpenAI API key cannot be empty in secrets file {secrets_yaml_path}.")
+
+        return secrets['email'], str(secrets['password']), secrets['openai_api_key']
+
+    @staticmethod
+    def validate_email(email: str) -> bool:
+        """Validates the email format."""
+        email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        return re.match(email_regex, email) is not None
 
 class FileManager:
     @staticmethod
@@ -150,21 +165,20 @@ class FileManager:
 
 def init_browser() -> webdriver.Chrome:
     try:
-        
-        options = chrome_browser_options()
+        options = chromeBrowserOptions()
         service = ChromeService(ChromeDriverManager().install())
         return webdriver.Chrome(service=service, options=options)
     except Exception as e:
         raise RuntimeError(f"Failed to initialize browser: {str(e)}")
 
-def create_and_run_bot(parameters, llm_api_key):
+def create_and_run_bot(email: str, password: str, parameters: dict, openai_api_key: str):
     try:
         style_manager = StyleManager()
         resume_generator = ResumeGenerator()
         with open(parameters['uploads']['plainTextResume'], "r", encoding='utf-8') as file:
             plain_text_resume = file.read()
         resume_object = Resume(plain_text_resume)
-        resume_generator_manager = FacadeManager(llm_api_key, style_manager, resume_generator, resume_object, Path("data_folder/output"))
+        resume_generator_manager = FacadeManager(openai_api_key, style_manager, resume_generator, resume_object, Path("data_folder/output"))
         os.system('cls' if os.name == 'nt' else 'clear')
         resume_generator_manager.choose_style()
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -172,20 +186,20 @@ def create_and_run_bot(parameters, llm_api_key):
         job_application_profile_object = JobApplicationProfile(plain_text_resume)
         
         browser = init_browser()
-        login_component = AIHawkAuthenticator(browser)
-        apply_component = AIHawkJobManager(browser)
-        gpt_answerer_component = GPTAnswerer(parameters, llm_api_key)
-        bot = AIHawkBotFacade(login_component, apply_component)
+        login_component = LinkedInAuthenticator(browser)
+        apply_component = LinkedInJobManager(browser)
+        gpt_answerer_component = GPTAnswerer(openai_api_key)
+        bot = LinkedInBotFacade(login_component, apply_component)
+        bot.set_secrets(email, password)
         bot.set_job_application_profile_and_resume(job_application_profile_object, resume_object)
         bot.set_gpt_answerer_and_resume_generator(gpt_answerer_component, resume_generator_manager)
         bot.set_parameters(parameters)
         bot.start_login()
         bot.start_apply()
     except WebDriverException as e:
-        logger.error(f"WebDriver error occurred: {e}")
+        print(f"WebDriver error occurred: {e}")
     except Exception as e:
         raise RuntimeError(f"Error running the bot: {str(e)}")
-
 
 @click.command()
 @click.option('--resume', type=click.Path(exists=True, file_okay=True, dir_okay=False, path_type=Path), help="Path to the resume PDF file")
@@ -195,27 +209,25 @@ def main(resume: Path = None):
         secrets_file, config_file, plain_text_resume_file, output_folder = FileManager.validate_data_folder(data_folder)
         
         parameters = ConfigValidator.validate_config(config_file)
-        llm_api_key = ConfigValidator.validate_secrets(secrets_file)
+        email, password, openai_api_key = ConfigValidator.validate_secrets(secrets_file)
         
         parameters['uploads'] = FileManager.file_paths_to_dict(resume, plain_text_resume_file)
         parameters['outputFileDirectory'] = output_folder
         
-        create_and_run_bot(parameters, llm_api_key)
+        create_and_run_bot(email, password, parameters, openai_api_key)
     except ConfigError as ce:
-        logger.error(f"Configuration error: {str(ce)}")
-        logger.error(f"Refer to the configuration guide for troubleshooting: https://github.com/feder-cr/AIHawk_AIHawk_automatic_job_application/blob/main/readme.md#configuration {str(ce)}")
+        print(f"Configuration error: {str(ce)}")
+        print("Refer to the configuration guide for troubleshooting: https://github.com/feder-cr/LinkedIn_AIHawk_automatic_job_application/blob/main/readme.md#configuration")
     except FileNotFoundError as fnf:
-        logger.error(f"File not found: {str(fnf)}")
-        logger.error("Ensure all required files are present in the data folder.")
-        logger.error("Refer to the file setup guide: https://github.com/feder-cr/AIHawk_AIHawk_automatic_job_application/blob/main/readme.md#configuration")
+        print(f"File not found: {str(fnf)}")
+        print("Ensure all required files are present in the data folder.")
+        print("Refer to the file setup guide: https://github.com/feder-cr/LinkedIn_AIHawk_automatic_job_application/blob/main/readme.md#configuration")
     except RuntimeError as re:
-
-        logger.error(f"Runtime error: {str(re)}")
-
-        logger.error("Refer to the configuration and troubleshooting guide: https://github.com/feder-cr/AIHawk_AIHawk_automatic_job_application/blob/main/readme.md#configuration")
+        print(f"Runtime error: {str(re)}")
+        print("Refer to the configuration and troubleshooting guide: https://github.com/feder-cr/LinkedIn_AIHawk_automatic_job_application/blob/main/readme.md#configuration")
     except Exception as e:
-        logger.error(f"An unexpected error occurred: {str(e)}")
-        logger.error("Refer to the general troubleshooting guide: https://github.com/feder-cr/AIHawk_AIHawk_automatic_job_application/blob/main/readme.md#configuration")
+        print(f"An unexpected error occurred: {str(e)}")
+        print("Refer to the general troubleshooting guide: https://github.com/feder-cr/LinkedIn_AIHawk_automatic_job_application/blob/main/readme.md#configuration")
 
 if __name__ == "__main__":
     main()
