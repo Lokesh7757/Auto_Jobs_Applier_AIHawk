@@ -259,8 +259,7 @@ Each section has specific fields to fill out:
     - **surname**: Your last name or family name.
     - **date_of_birth**: Your birth date in the format DD/MM/YYYY.
     - **country**: The country where you currently reside.
-    - **city**: The city where you currently live.
-    - **address**: Your full address, including street and number.
+    - **city**: The city where you currently live.     - **address**: Your full address, including street and number.
     - **zip_code**: Your postal/ZIP code.
     - **phone_prefix**: The international dialing code for your phone number (e.g., +1 for the USA, +44 for the UK).
     - **phone**: Your phone number without the international prefix.
