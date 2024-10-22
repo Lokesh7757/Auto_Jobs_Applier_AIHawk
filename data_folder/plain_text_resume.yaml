@@ -5,7 +5,6 @@ personal_information:
   country: "[Your Country]"
   city: "[Your City]"
   address: "[Your Address]"
-  zip_code: "[Your zip code]"
   phone_prefix: "[Your Phone Prefix]"
   phone: "[Your Phone Number]"
   email: "[Your Email Address]"
@@ -13,93 +12,94 @@ personal_information:
   linkedin: "[Your LinkedIn Profile URL]"
 
 education_details:
-  - education_level: "[Your Education Level]"
-    institution: "[Your Institution]"
-    field_of_study: "[Your Field of Study]"
-    final_evaluation_grade: "[Your Final Evaluation Grade]"
-    start_date: "[Start Date]"
-    year_of_completion: "[Year of Completion]"
-    exam:
-      exam_name_1: "[Grade]"
-      exam_name_2: "[Grade]"
-      exam_name_3: "[Grade]"
-      exam_name_4: "[Grade]"
-      exam_name_5: "[Grade]"
-      exam_name_6: "[Grade]"
+  - education_level: "Master's Degree"
+    institution: "K.K. Wagh Institute of Engineering Education and Research"
+    field_of_study: "Master of Computer Application (MCA)"
+    final_evaluation_grade: "Pending"  # Update once available
+    start_date: "August 2023"
+    year_of_completion: 2025  # Update with the expected year of completion
 
-experience_details:
-  - position: "[Your Position]"
-    company: "[Company Name]"
-    employment_period: "[Employment Period]"
-    location: "[Location]"
-    industry: "[Industry]"
-    key_responsibilities:
-      - responsibility_1: "[Responsibility Description]"
-      - responsibility_2: "[Responsibility Description]"
-      - responsibility_3: "[Responsibility Description]"
-    skills_acquired:
-      - "[Skill]"
-      - "[Skill]"
-      - "[Skill]"
-
-  - position: "[Your Position]"
-    company: "[Company Name]"
-    employment_period: "[Employment Period]"
-    location: "[Location]"
-    industry: "[Industry]"
-    key_responsibilities:
-      - responsibility_1: "[Responsibility Description]"
-      - responsibility_2: "[Responsibility Description]"
-      - responsibility_3: "[Responsibility Description]"
-    skills_acquired:
-      - "[Skill]"
-      - "[Skill]"
-      - "[Skill]"
+  - education_level: "Bachelor's Degree"
+    institution: "Commerce Management & Computer Science (CMCS)"
+    field_of_study: "Bachelor of Computer Application (BCA)"
+    final_evaluation_grade: "First Class"  # Update with actual grade
+    start_date: "June 2020"
+    year_of_completion: 2023  # Use an integer
 
 projects:
-  - name: "[Project Name]"
-    description: "[Project Description]"
-    link: "[Project Link]"
+  - name: "AI-Powered LinkedIn Job Application Automation Tool"
+    description: |
+      Developed an AI-driven tool that automates and personalizes the job search and application process, improving efficiency and success rates for job seekers. Leveraged Python to build the automation workflow and integrated machine learning algorithms to enhance application matching and personalization.
+    technologies: ["Python", "Selenium"]
+    start_date: "July 2024"
+    end_date: "September 2024"
 
-  - name: "[Project Name]"
-    description: "[Project Description]"
-    link: "[Project Link]"
+  - name: "Smart Attendance System"
+    description: |
+      Developed an automated attendance tracking system using Python and OpenCV, featuring real-time face recognition and verification. Integrated email notifications to alert individuals (e.g., teachers) of student attendance.
+    technologies: ["Python", "OpenCV"]
+    start_date: "August 2024"
+    end_date: "September 2024"
 
-achievements:
-  - name: "[Achievement Name]"
-    description: "[Achievement Description]"
-  - name: "[Achievement Name]"
-    description: "[Achievement Description]"
+  - name: "E-Car Pre-Booking System"
+    description: |
+      Developed an online platform that allows customers to pre-book electric vehicles, with a seamless booking experience and integrated payment processing. Integrated an admin panel for easy management of bookings, vehicle availability, and payment records.
+    technologies: ["PHP", "HTML/CSS", "XAMPP"]
+    start_date: "March 2023"
+    end_date: "May 2023"
 
 certifications:
-  - name: "[Certification Name]"
-    description: "[Certification Description]"
-  - name: "[Certification Name]"
-    description: "[Certification Description]"
+  - name: "React JS Course"
+    provider: "Scaler"
+    description: "Completed a course on React JS covering the essentials of building interactive web interfaces."
+    date: "October 2024"
 
-languages:
-  - language: "[Language]"
-    proficiency: "[Proficiency Level]"
-  - language: "[Language]"
-    proficiency: "[Proficiency Level]"
+  - name: "Web Development Fundamentals"
+    provider: "IBM SkillsBuild"
+    description: "Fundamental course on web development covering HTML, CSS, and basic JavaScript."
+    date: "August 2024"
 
-interests:
-  - "[Interest]"
-  - "[Interest]"
-  - "[Interest]"
+  - name: "Python Course for Beginners"
+    provider: "Scaler"
+    description: "Beginner-level course on Python covering basic syntax, data structures, and programming concepts."
+    date: "April 2024"
+
+  - name: "C++ Programming"
+    provider: "PanTech Learning"
+    description: "Comprehensive course on C++ programming covering object-oriented principles and practical coding."
+    date: "March 2024"
+
+co_curricular_activities:
+  - activity: "Competed in CodeXen Hackathon (Synapse 2024) organized by DA-IICTs, Gandhinagar."
+  - activity: "Participated in Chess Tournament organized by CMR College of Engineering, Hyderabad."
+  - activity: "Participated in the TATA Crucible Campus Quiz 2024."
+
+skills:
+  languages:
+    - "HTML/CSS"
+    - "JavaScript"
+    - "Python"
+    - "C"
+    - "C++"
+  frameworks_libraries:
+    - "Django"
+    - "React.JS"
+  databases:
+    - "MySQL"
+    - "Oracle"
 
 availability:
-  notice_period: "[Notice Period]"
+  notice_period: "0 Days"
 
 salary_expectations:
-  salary_range_usd: "[Salary Range]"
+  salary_range_usd: "90000 - 110000"
 
 self_identification:
-  gender: "[Gender]"
-  pronouns: "[Pronouns]"
-  veteran: "[Yes/No]"
-  disability: "[Yes/No]"
-  ethnicity: "[Ethnicity]"
+  gender: "Male"
+  pronouns: "He/Him"
+  veteran: "No"
+  disability: "No"
+  ethnicity: "White"
 
 
 legal_authorization:
@@ -111,20 +111,12 @@ legal_authorization:
   legally_allowed_to_work_in_eu: "[Yes/No]"
   legally_allowed_to_work_in_us: "[Yes/No]"
   requires_eu_sponsorship: "[Yes/No]"
-  canada_work_authorization: "[Yes/No]"
-  requires_canada_visa: "[Yes/No]"
-  legally_allowed_to_work_in_canada: "[Yes/No]"
-  requires_canada_sponsorship: "[Yes/No]"
-  uk_work_authorization: "[Yes/No]"
-  requires_uk_visa: "[Yes/No]"
-  legally_allowed_to_work_in_uk: "[Yes/No]"
-  requires_uk_sponsorship: "[Yes/No]"
-
 
 work_preferences:
-  remote_work: "[Yes/No]"
-  in_person_work: "[Yes/No]"
-  open_to_relocation: "[Yes/No]"
-  willing_to_complete_assessments: "[Yes/No]"
-  willing_to_undergo_drug_tests: "[Yes/No]"
-  willing_to_undergo_background_checks: "[Yes/No]"
+  remote_work: "Yes"
+  in_person_work: "Yes"
+  open_to_relocation: "Yes"
+  willing_to_complete_assessments: "Yes"
+  willing_to_undergo_drug_tests: "Yes"
+  willing_to_undergo_background_checks: "Yes"
+

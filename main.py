@@ -7,13 +7,13 @@ import click
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
-from selenium.common.exceptions import WebDriverException
-from lib_resume_builder_AIHawk import Resume, FacadeManager, ResumeGenerator, StyleManager
-from src.utils import chrome_browser_options
-from src.llm.llm_manager import GPTAnswerer
-from src.aihawk_authenticator import AIHawkAuthenticator
-from src.aihawk_bot_facade import AIHawkBotFacade
-from src.aihawk_job_manager import AIHawkJobManager
+from selenium.common.exceptions import WebDriverException, TimeoutException
+from lib_resume_builder_AIHawk import Resume,StyleManager,FacadeManager,ResumeGenerator
+from src.utils import chromeBrowserOptions
+from src.gpt import GPTAnswerer
+from src.linkedIn_authenticator import LinkedInAuthenticator
+from src.linkedIn_bot_facade import LinkedInBotFacade
+from src.linkedIn_job_manager import LinkedInJobManager
 from src.job_application_profile import JobApplicationProfile
 from loguru import logger
 
@@ -60,12 +60,9 @@ class ConfigValidator:
                 if key in ['companyBlacklist', 'titleBlacklist']:
                     parameters[key] = []
                 else:
-                    raise ConfigError(f"Missing or invalid key '{key}' in config file {config_yaml_path}")
+                    raise ConfigError(f"Missing key '{key}' in config file {config_yaml_path}")
             elif not isinstance(parameters[key], expected_type):
-                if key in ['companyBlacklist', 'titleBlacklist'] and parameters[key] is None:
-                    parameters[key] = []
-                else:
-                    raise ConfigError(f"Invalid type for key '{key}' in config file {config_yaml_path}. Expected {expected_type}.")
+                raise ConfigError(f"Invalid type for key '{key}' in config file {config_yaml_path}. Expected {expected_type}.")
 
         # Validate experience levels, ensure they are boolean
         experience_levels = ['internship', 'entry', 'associate', 'mid-senior level', 'director', 'executive']
@@ -126,7 +123,7 @@ class FileManager:
 
         required_files = ['secrets.yaml', 'config.yaml', 'plain_text_resume.yaml']
         missing_files = [file for file in required_files if not (app_data_folder / file).exists()]
-        
+
         if missing_files:
             raise FileNotFoundError(f"Missing files in the data folder: {', '.join(missing_files)}")
 
@@ -160,36 +157,33 @@ def create_and_run_bot(parameters, llm_api_key):
     try:
         style_manager = StyleManager()
         resume_generator = ResumeGenerator()
+        
         with open(parameters['uploads']['plainTextResume'], "r", encoding='utf-8') as file:
             plain_text_resume = file.read()
+
         resume_object = Resume(plain_text_resume)
-        resume_generator_manager = FacadeManager(llm_api_key, style_manager, resume_generator, resume_object, Path("data_folder/output"))
-        
-        # Run the resume generator manager's functions
+        resume_generator_manager = FacadeManager(openai_api_key, style_manager, resume_generator, resume_object, Path("data_folder/output"))
+        os.system('cls' if os.name == 'nt' else 'clear')
         resume_generator_manager.choose_style()
         
         job_application_profile_object = JobApplicationProfile(plain_text_resume)
-        
         browser = init_browser()
-        login_component = AIHawkAuthenticator(browser)
-        apply_component = AIHawkJobManager(browser)
-        gpt_answerer_component = GPTAnswerer(parameters, llm_api_key)
-        bot = AIHawkBotFacade(login_component, apply_component)
+        login_component = LinkedInAuthenticator(browser)
+        apply_component = LinkedInJobManager(browser)
+        gpt_answerer_component = GPTAnswerer(openai_api_key)
+        bot = LinkedInBotFacade(login_component, apply_component)
+        bot.set_secrets(email, password)
         bot.set_job_application_profile_and_resume(job_application_profile_object, resume_object)
         bot.set_gpt_answerer_and_resume_generator(gpt_answerer_component, resume_generator_manager)
         bot.set_parameters(parameters)
+        
+        print("Starting login process...")
         bot.start_login()
-        if (parameters['collectMode'] == True):
-            print('Collecting')
-            bot.start_collect_data()
-        else:
-            print('Applying')
-            bot.start_apply()
+        bot.start_apply()
     except WebDriverException as e:
         logger.error(f"WebDriver error occurred: {e}")
     except Exception as e:
         raise RuntimeError(f"Error running the bot: {str(e)}")
-
 
 @click.command()
 @click.option('--resume', type=click.Path(exists=True, file_okay=True, dir_okay=False, path_type=Path), help="Path to the resume PDF file")
@@ -215,9 +209,13 @@ def main(collect: False, resume: Path = None):
         logger.error(f"File not found: {str(fnf)}")
         logger.error("Ensure all required files are present in the data folder.")
     except RuntimeError as re:
-        logger.error(f"Runtime error: {str(re)}")
+
+        print(f"Runtime error: {str(re)}")
+
+        print("Refer to the configuration and troubleshooting guide: https://github.com/feder-cr/LinkedIn_AIHawk_automatic_job_application/blob/main/readme.md#configuration")
     except Exception as e:
         logger.error(f"An unexpected error occurred: {str(e)}")
 
 if __name__ == "__main__":
     main()
+
